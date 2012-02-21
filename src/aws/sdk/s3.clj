@@ -3,6 +3,7 @@
 
   Each function takes a map of credentials as its first argument. The
   credentials map should contain an :access-key key and a :secret-key key."
+  (:require [clojure.contrib.json :as json])
   (:import com.amazonaws.auth.BasicAWSCredentials
            com.amazonaws.services.s3.AmazonS3Client
            com.amazonaws.AmazonServiceException
@@ -39,6 +40,20 @@
   "Delete the S3 bucket with the supplied name."
   [cred name]
   (.deleteBucket (s3-client cred) name))
+
+(defn get-bucket-policy 
+  "Retrieves the bucket policy for the bucket with the supplied name,
+   returning it as a map."
+  [cred name]
+  (when-let [policy-text (.getPolicyText (.getBucketPolicy (s3-client cred) name))]
+    (json/read-json policy-text)))
+    
+(defn set-bucket-policy! 
+  "Sets the bucket policy for the bucket with the supplied name. The policy
+   is to be supplied as a map."
+  [cred name policy]
+  (let [json-policy (json/json-str policy)]
+    (.setBucketPolicy (s3-client cred) name json-policy)))
 
 (defprotocol ^{:no-doc true} ToPutRequest
   "A protocol for constructing a map that represents an S3 put request."
