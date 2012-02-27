@@ -13,6 +13,8 @@
            com.amazonaws.services.s3.model.PutObjectRequest
            com.amazonaws.services.s3.model.S3Object
            com.amazonaws.services.s3.model.S3ObjectSummary
+           com.amazonaws.services.s3.model.BucketLifecycleConfiguration$Rule
+           com.amazonaws.services.s3.model.BucketLifecycleConfiguration
            java.io.ByteArrayInputStream
            java.io.File
            java.io.InputStream
@@ -157,7 +159,13 @@
                 :etag           (.getETag summary)
                 :last-modified  (.getLastModified summary)}
      :bucket   (.getBucketName summary)
-     :key      (.getKey summary)}))
+     :key      (.getKey summary)})
+  BucketLifecycleConfiguration$Rule
+  (to-map [rule]
+    {:id (.getId rule)
+     :status (.getStatus rule)
+     :prefix (.getPrefix rule)
+     :expiration (.getExpirationInDays rule)}))
 
 (defn get-object
   "Get an object from an S3 bucket. The object is returned as a map with the
@@ -239,3 +247,29 @@
      (copy-object cred bucket src-key bucket dest-key))
   ([cred src-bucket src-key dest-bucket dest-key]
      (.copyObject (s3-client cred) src-bucket src-key dest-bucket dest-key)))
+     
+(defn- map->BucketLifecycleConfigurationRule
+ "Converts a map into an instance of BucketLifeCycleConfiguration$Rule"
+ [rule]
+ (-> (BucketLifecycleConfiguration$Rule.)
+     (.withId (:id rule))
+     (.withPrefix (:prefix rule))
+     (.withStatus (:status rule))
+     (.withExpirationInDays (:expiration rule))))
+
+(defn- ->BucketLifecycleConfiguration
+  "Creates a BucketLifecycleConfiguration from the the given rules."
+  [rules]
+    (.withRules (BucketLifecycleConfiguration.)
+                (map map->BucketLifecycleConfigurationRule rules)))
+
+(defn put-bucket-lifecycle!
+  "Sets the lifecycle configuration of the specified bucket to the given rules."
+  [cred bucket & rules]
+  (.setBucketLifecycleConfiguration (s3-client cred) bucket (->BucketLifecycleConfiguration rules)))
+
+(defn get-bucket-lifecycle
+  "Returns the lifecycle configuration of the given bucket or nil if none exists."
+  [cred bucket]
+  (when-let [result (.getBucketLifecycleConfiguration (s3-client cred) bucket)]
+    (map to-map (.getRules result))))
