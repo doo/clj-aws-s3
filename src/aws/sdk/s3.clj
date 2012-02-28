@@ -11,6 +11,7 @@
            com.amazonaws.services.s3.model.ObjectMetadata
            com.amazonaws.services.s3.model.ObjectListing
            com.amazonaws.services.s3.model.PutObjectRequest
+           com.amazonaws.services.s3.model.GetObjectRequest
            com.amazonaws.services.s3.model.S3Object
            com.amazonaws.services.s3.model.S3ObjectSummary
            com.amazonaws.services.s3.model.BucketLifecycleConfiguration$Rule
@@ -174,8 +175,12 @@
     :metadata - a map of the object's metadata
     :bucket   - the name of the bucket
     :key      - the object's key"
-  [cred bucket key]
-  (to-map (.getObject (s3-client cred) bucket key)))
+  [cred bucket key & [version]]
+  (to-map (. (s3-client cred)
+             (getObject
+              (if version
+                (GetObjectRequest. bucket key version)
+                (GetObjectRequest. bucket key))))))
 
 (defn get-object-metadata
   "Get an object's metadata from a bucket. The metadata is a map with the
