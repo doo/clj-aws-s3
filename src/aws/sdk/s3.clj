@@ -12,6 +12,7 @@
            com.amazonaws.services.s3.model.ObjectListing
            com.amazonaws.services.s3.model.PutObjectRequest
            com.amazonaws.services.s3.model.GetObjectRequest
+           com.amazonaws.services.s3.model.CopyObjectRequest
            com.amazonaws.services.s3.model.S3Object
            com.amazonaws.services.s3.model.S3ObjectSummary
            com.amazonaws.services.s3.model.BucketLifecycleConfiguration$Rule
@@ -249,9 +250,15 @@
 (defn copy-object
   "Copy an existing S3 object to another key."
   ([cred bucket src-key dest-key]
-     (copy-object cred bucket src-key bucket dest-key))
-  ([cred src-bucket src-key dest-bucket dest-key]
-     (.copyObject (s3-client cred) src-bucket src-key dest-bucket dest-key)))
+     (copy-object cred bucket src-key dest-key nil))
+  ([cred bucket src-key dest-key meta]
+     (copy-object cred bucket src-key bucket dest-key meta))
+  ([cred src-bucket src-key dest-bucket dest-key meta]
+     (.copyObject (s3-client cred)
+                  (let [request (CopyObjectRequest. src-bucket src-key dest-bucket dest-key)]
+                    (if meta
+                      (.withNewObjectMetadata request meta)
+                      request)))))
      
 (defn- map->BucketLifecycleConfigurationRule
  "Converts a map into an instance of BucketLifeCycleConfiguration$Rule"
